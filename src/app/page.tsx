@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getTiles } from "@/lib/tiles";
@@ -7,11 +6,12 @@ import { TileBoard } from "@/components/tile-board";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SEED_TILES } from "@/lib/seed-tiles";
 
+// Always read fresh from Supabase — tiles change from any device.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
-  // Without Supabase env vars, show the seed tiles read-only — lets Phase 1's
-  // shell keep working while Phase 2+'s env vars aren't set yet. Once
-  // configured, every visitor needs a session; RLS means each signed-in user
-  // only ever sees and edits their own board.
+  // Without Supabase env vars, show the seed tiles read-only so the shell
+  // still renders standalone.
   if (!isSupabaseConfigured()) {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
@@ -27,18 +27,14 @@ export default async function Home() {
     );
   }
 
+  // No auth: a single shared board, open to anyone with the URL. Reads and
+  // writes go through the anon key against permissive RLS policies.
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const tiles = await getTiles(supabase, user.id);
+  const tiles = await getTiles(supabase);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <TileBoard initialTiles={tiles} userId={user.id} />
+      <TileBoard initialTiles={tiles} />
     </main>
   );
 }

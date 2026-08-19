@@ -24,8 +24,11 @@ import {
   deleteTile,
   reorderTiles,
   uploadTileImage,
+  seedStarterTiles,
   type TileInput,
 } from "@/lib/tiles";
+import { STARTER_TILES } from "@/lib/starter-tiles";
+import { Button } from "@/components/ui/button";
 import { resizeImageToSquareWebp } from "@/lib/image";
 import { useTileDensity } from "@/hooks/use-tile-density";
 import { gridClass } from "@/lib/grid-density";
@@ -42,7 +45,6 @@ function getGreeting(): string {
 
 interface TileBoardProps {
   initialTiles: Tile[];
-  userId: string;
 }
 
 /**
@@ -53,13 +55,14 @@ interface TileBoardProps {
  * category-accordions.tsx in portfolio-dashboard — proven to distinguish a
  * tap from a drag start on touch.
  */
-export function TileBoard({ initialTiles, userId }: TileBoardProps) {
+export function TileBoard({ initialTiles }: TileBoardProps) {
   const [tiles, setTiles] = useState<Tile[]>(initialTiles);
   const [editMode, setEditMode] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTile, setEditingTile] = useState<Tile | null>(null);
   const [actionsTile, setActionsTile] = useState<Tile | null>(null);
   const [density, setDensity] = useTileDensity();
+  const [seeding, setSeeding] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -94,7 +97,6 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
       const supabase = createClient();
       await reorderTiles(
         supabase,
-        userId,
         reordered.map((t) => ({ id: t.id, position: t.position })),
       );
     } catch {
@@ -110,7 +112,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
         let imagePath: string | undefined;
         if (imageFile) {
           const blob = await resizeImageToSquareWebp(imageFile);
-          imagePath = await uploadTileImage(supabase, userId, editingTile.id, blob);
+          imagePath = await uploadTileImage(supabase, editingTile.id, blob);
         }
         const updated = await updateTile(supabase, editingTile.id, {
           ...input,
@@ -119,11 +121,11 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
         setTiles((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         toast.success("Tile updated.");
       } else {
-        const created = await createTile(supabase, userId, input);
+        const created = await createTile(supabase, input);
         let finalTile = created;
         if (imageFile) {
           const blob = await resizeImageToSquareWebp(imageFile);
-          const imagePath = await uploadTileImage(supabase, userId, created.id, blob);
+          const imagePath = await uploadTileImage(supabase, created.id, blob);
           finalTile = await updateTile(supabase, created.id, { imagePath });
         }
         setTiles((prev) => [...prev, finalTile]);
@@ -138,12 +140,25 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
   async function handleDelete(tile: Tile) {
     const supabase = createClient();
     try {
-      await deleteTile(supabase, userId, tile.id);
+      await deleteTile(supabase, tile.id);
       setTiles((prev) => prev.filter((t) => t.id !== tile.id));
       toast.success(`Removed ${tile.label}.`);
     } catch (err) {
       toast.error("Couldn't remove the tile.");
       throw err;
+    }
+  }
+
+  async function handleSeed() {
+    setSeeding(true);
+    try {
+      const created = await seedStarterTiles(createClient(), STARTER_TILES);
+      setTiles(created);
+      toast.success("Starter tiles added.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't add the starter tiles.");
+    } finally {
+      setSeeding(false);
     }
   }
 
@@ -174,7 +189,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
       </div>
 
       {tiles.length === 0 ? (
-        <EmptyState onAdd={openCreate} />
+        <EmptyState onAdd={openCreate} onSeed={handleSeed} seeding={seeding} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={tiles.map((t) => t.id)} strategy={rectSortingStrategy}>
@@ -223,17 +238,29 @@ function AddTileButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({
+  onAdd,
+  onSeed,
+  seeding,
+}: {
+  onAdd: () => void;
+  onSeed: () => void;
+  seeding: boolean;
+}) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 py-16 text-center">
       <p className="text-sm font-medium text-foreground">No tiles yet</p>
       <p className="text-sm text-muted-foreground">
-        Add your first app, prototype, or profile link to get started.
+        Start with your existing apps, or add one from scratch.
       </p>
+      <Button className="mt-2" onClick={onSeed} disabled={seeding}>
+        {seeding ? "Adding…" : "Add starter tiles"}
+      </Button>
       <button
         type="button"
         onClick={onAdd}
         className="mt-2 flex aspect-square w-16 items-center justify-center rounded-2xl border-2 border-dashed border-border text-muted-foreground"
+        aria-label="Add a tile from scratch"
       >
         <PlusIcon className="size-6" />
       </button>

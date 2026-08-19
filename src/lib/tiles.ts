@@ -3,6 +3,13 @@ import type { Tile } from "@/lib/types";
 
 export const IMAGE_BUCKET = "tile-images";
 
+/**
+ * This app has no login: there is a single shared board, and every read and
+ * write goes through the public anon key against permissive RLS policies
+ * (see supabase/schema.sql). Nothing here is user-scoped — the `user_id`
+ * column still exists on the table but is left null.
+ */
+
 /** Raw shape of a `public.tiles` row — see supabase/schema.sql. */
 interface TileRow {
   id: string;
@@ -36,12 +43,11 @@ function toTile(row: TileRow, supabase: SupabaseClient): Tile {
   };
 }
 
-/** All of a user's tiles, in display order. */
-export async function getTiles(supabase: SupabaseClient, userId: string): Promise<Tile[]> {
+/** Every tile, in display order. */
+export async function getTiles(supabase: SupabaseClient): Promise<Tile[]> {
   const { data, error } = await supabase
     .from("tiles")
     .select("id, label, tagline, url, image_path, accent, position")
-    .eq("user_id", userId)
     .order("position", { ascending: true });
 
   if (error) throw error;
@@ -50,14 +56,12 @@ export async function getTiles(supabase: SupabaseClient, userId: string): Promis
 
 export async function createTile(
   supabase: SupabaseClient,
-  userId: string,
   input: TileInput,
 ): Promise<Tile> {
   // New tiles go to the end of the list.
   const { data: existing, error: countError } = await supabase
     .from("tiles")
     .select("position")
-    .eq("user_id", userId)
     .order("position", { ascending: false })
     .limit(1);
   if (countError) throw countError;
@@ -66,7 +70,6 @@ export async function createTile(
   const { data, error } = await supabase
     .from("tiles")
     .insert({
-      user_id: userId,
       label: input.label,
       tagline: input.tagline ?? null,
       url: input.url ?? null,
@@ -103,15 +106,11 @@ export async function updateTile(
   return toTile(data as TileRow, supabase);
 }
 
-export async function deleteTile(
-  supabase: SupabaseClient,
-  userId: string,
-  id: string,
-): Promise<void> {
+export async function deleteTile(supabase: SupabaseClient, id: string): Promise<void> {
   // Best-effort image cleanup first — an orphaned storage object is harmless
   // clutter, but if this fails we'd still rather delete the tile than block
   // on it, so failures here are swallowed.
-  await supabase.storage.from(IMAGE_BUCKET).remove([`${userId}/${id}.webp`]);
+  await supabase.storage.from(IMAGE_BUCKET).remove([`tiles/${id}.webp`]);
 
   const { error } = await supabase.from("tiles").delete().eq("id", id);
   if (error) throw error;
@@ -120,11 +119,10 @@ export async function deleteTile(
 /** Uploads a resized tile image and returns the storage path to save on the tile row. */
 export async function uploadTileImage(
   supabase: SupabaseClient,
-  userId: string,
   tileId: string,
   blob: Blob,
 ): Promise<string> {
-  const path = `${userId}/${tileId}.webp`;
+  const path = `tiles/${tileId}.webp`;
   const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, blob, {
     contentType: "image/webp",
     upsert: true,
@@ -134,21 +132,47 @@ export async function uploadTileImage(
 }
 
 /**
- * Persists a full reorder as parallel per-row position updates, scoped to
- * `userId` via RLS. Deliberately not `upsert` — every id here refers to an
- * existing tile, and an upsert's INSERT branch would trip the NOT NULL
- * constraint on `label` since only `position` is supplied.
+ * Persists a full reorder as parallel per-row position updates. Deliberately
+ * not `upsert` — every id here refers to an existing tile, and an upsert's
+ * INSERT branch would trip the NOT NULL constraint on `label` since only
+ * `position` is supplied.
  */
 export async function reorderTiles(
   supabase: SupabaseClient,
-  userId: string,
   order: { id: string; position: number }[],
 ): Promise<void> {
   const results = await Promise.all(
     order.map(({ id, position }) =>
-      supabase.from("tiles").update({ position }).eq("id", id).eq("user_id", userId),
+      supabase.from("tiles").update({ position }).eq("id", id),
     ),
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) throw failed.error;
+}
+
+/**
+ * Bulk-inserts a first-run tile set in one round trip, positioned by array
+ * order. Not a loop over `createTile` — that re-queries the max position on
+ * every call, turning five tiles into ten round trips.
+ */
+export async function seedStarterTiles(
+  supabase: SupabaseClient,
+  inputs: TileInput[],
+): Promise<Tile[]> {
+  const { data, error } = await supabase
+    .from("tiles")
+    .insert(
+      inputs.map((input, i) => ({
+        label: input.label,
+        tagline: input.tagline ?? null,
+        url: input.url ?? null,
+        image_path: input.imagePath ?? null,
+        accent: input.accent ?? "#2a41ba",
+        position: i,
+      })),
+    )
+    .select("id, label, tagline, url, image_path, accent, position");
+
+  if (error) throw error;
+  return (data as TileRow[]).map((row) => toTile(row, supabase));
 }
