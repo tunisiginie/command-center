@@ -15,6 +15,8 @@ import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortab
 import { SortableTile } from "@/components/sortable-tile";
 import { TileEditorSheet } from "@/components/tile-editor-sheet";
 import { TileActionsSheet } from "@/components/tile-actions-sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { DensityToggle } from "@/components/density-toggle";
 import { createClient } from "@/lib/supabase/client";
 import {
   createTile,
@@ -25,7 +27,18 @@ import {
   type TileInput,
 } from "@/lib/tiles";
 import { resizeImageToSquareWebp } from "@/lib/image";
+import { useTileDensity } from "@/hooks/use-tile-density";
+import { gridClass } from "@/lib/grid-density";
+import { cn } from "@/lib/utils";
 import type { Tile } from "@/lib/types";
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Still up";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 interface TileBoardProps {
   initialTiles: Tile[];
@@ -46,6 +59,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTile, setEditingTile] = useState<Tile | null>(null);
   const [actionsTile, setActionsTile] = useState<Tile | null>(null);
+  const [density, setDensity] = useTileDensity();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -141,15 +155,22 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">Command Center</h1>
-        <button
-          type="button"
-          onClick={() => setEditMode((v) => !v)}
-          className="text-sm font-medium text-primary"
-        >
-          {editMode ? "Done" : "Edit"}
-        </button>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">{getGreeting()}</p>
+          <h1 className="text-xl font-semibold text-foreground">Command Center</h1>
+        </div>
+        <div className="flex items-center gap-2 pt-0.5">
+          <DensityToggle density={density} onChange={setDensity} />
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setEditMode((v) => !v)}
+            className="text-sm font-medium text-primary"
+          >
+            {editMode ? "Done" : "Edit"}
+          </button>
+        </div>
       </div>
 
       {tiles.length === 0 ? (
@@ -157,7 +178,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={tiles.map((t) => t.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+            <div className={cn("grid gap-x-4 gap-y-6", gridClass(density))}>
               {tiles.map((tile) => (
                 <SortableTile
                   key={tile.id}

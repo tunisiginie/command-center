@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { getTiles } from "@/lib/tiles";
 import { TileGrid } from "@/components/tile-grid";
 import { TileBoard } from "@/components/tile-board";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SEED_TILES } from "@/lib/seed-tiles";
 
 export default async function Home() {
@@ -16,7 +17,10 @@ export default async function Home() {
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <header className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground">Command Center</h1>
-          <span className="text-[11px] text-muted-foreground">Demo — not connected</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">Demo — not connected</span>
+            <ThemeToggle />
+          </div>
         </header>
         <TileGrid tiles={SEED_TILES} />
       </main>
