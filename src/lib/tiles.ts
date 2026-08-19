@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tile } from "@/lib/types";
 
-const IMAGE_BUCKET = "tile-images";
+export const IMAGE_BUCKET = "tile-images";
 
 /** Raw shape of a `public.tiles` row — see supabase/schema.sql. */
 interface TileRow {
@@ -103,9 +103,34 @@ export async function updateTile(
   return toTile(data as TileRow, supabase);
 }
 
-export async function deleteTile(supabase: SupabaseClient, id: string): Promise<void> {
+export async function deleteTile(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string,
+): Promise<void> {
+  // Best-effort image cleanup first — an orphaned storage object is harmless
+  // clutter, but if this fails we'd still rather delete the tile than block
+  // on it, so failures here are swallowed.
+  await supabase.storage.from(IMAGE_BUCKET).remove([`${userId}/${id}.webp`]);
+
   const { error } = await supabase.from("tiles").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** Uploads a resized tile image and returns the storage path to save on the tile row. */
+export async function uploadTileImage(
+  supabase: SupabaseClient,
+  userId: string,
+  tileId: string,
+  blob: Blob,
+): Promise<string> {
+  const path = `${userId}/${tileId}.webp`;
+  const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, blob, {
+    contentType: "image/webp",
+    upsert: true,
+  });
+  if (error) throw error;
+  return path;
 }
 
 /**

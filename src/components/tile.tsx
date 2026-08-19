@@ -5,6 +5,11 @@ import type { Tile as TileData } from "@/lib/types";
 interface TileProps {
   tile: TileData;
   className?: string;
+  /** False while in edit mode — tap shouldn't launch the link when you're mid-rearrange. */
+  interactive?: boolean;
+  /** iOS-style wiggle, driven by the parent (edit mode). Kept off the drag wrapper
+   *  itself so dnd-kit's translate transform and this rotation never fight. */
+  jiggle?: boolean;
 }
 
 /**
@@ -17,13 +22,17 @@ interface TileProps {
  * open as an in-app overlay (swipe down to return) instead of kicking out to
  * Safari. `target="_blank"` breaks that behavior, so don't add one here.
  */
-export function Tile({ tile, className }: TileProps) {
-  const isLive = Boolean(tile.url);
+export function Tile({ tile, className, interactive = true, jiggle = false }: TileProps) {
+  const hasUrl = Boolean(tile.url);
+  const clickable = hasUrl && interactive;
   const initial = tile.label.trim().charAt(0).toUpperCase() || "?";
 
   const icon = (
     <div
-      className="glass tile-touch relative aspect-square w-full overflow-hidden rounded-2xl"
+      className={cn(
+        "glass tile-touch relative aspect-square w-full overflow-hidden rounded-2xl",
+        jiggle && "tile-jiggle",
+      )}
       style={!tile.imageUrl ? { backgroundColor: tile.accent } : undefined}
     >
       {tile.imageUrl ? (
@@ -54,12 +63,12 @@ export function Tile({ tile, className }: TileProps) {
     </div>
   );
 
-  if (!isLive) {
+  if (!clickable) {
     return (
       <div
-        className={cn("flex flex-col items-center opacity-40", className)}
+        className={cn("flex flex-col items-center", !hasUrl && "opacity-40", className)}
         aria-disabled="true"
-        title="Not built yet"
+        title={!hasUrl ? "Not built yet" : undefined}
       >
         {icon}
         {labelBlock}

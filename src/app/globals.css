@@ -156,4 +156,27 @@
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* iOS-style "jiggle" while rearranging. Odd/even delay offsets keep tiles
+     from swaying in lockstep, same as the real homescreen. */
+  @keyframes tile-jiggle {
+    0%,
+    100% {
+      transform: rotate(-1deg);
+    }
+    50% {
+      transform: rotate(1deg);
+    }
+  }
+  .tile-jiggle {
+    animation: tile-jiggle 0.22s ease-in-out infinite;
+  }
+  .tile-jiggle:nth-child(even) {
+    animation-delay: -0.11s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile-jiggle {
+      animation: none;
+    }
+  }
 }
