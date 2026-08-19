@@ -4,6 +4,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PencilIcon, XIcon } from "lucide-react";
 import { Tile } from "@/components/tile";
+import { useLongPress } from "@/hooks/use-long-press";
+import { cn } from "@/lib/utils";
 import type { Tile as TileData } from "@/lib/types";
 
 interface SortableTileProps {
@@ -11,25 +13,31 @@ interface SortableTileProps {
   editMode: boolean;
   onEdit: (tile: TileData) => void;
   onDelete: (tile: TileData) => void;
+  onLongPress: (tile: TileData) => void;
 }
 
 /**
  * Drag-and-drop + edit-mode chrome around a plain <Tile>. Only wired up to
  * dnd-kit's sortable listeners while `editMode` is on, so a normal tap in
- * view mode is never mistaken for a drag start.
+ * view mode is never mistaken for a drag start — and the long-press (copy
+ * link / QR) gesture only runs the rest of the time, so the two never
+ * compete for the same touch.
  */
-export function SortableTile({ tile, editMode, onEdit, onDelete }: SortableTileProps) {
+export function SortableTile({ tile, editMode, onEdit, onDelete, onLongPress }: SortableTileProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tile.id,
+  });
+
+  const longPress = useLongPress({
+    onLongPress: () => onLongPress(tile),
   });
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="relative touch-none"
-      {...(editMode ? attributes : {})}
-      {...(editMode ? listeners : {})}
+      className={cn("relative", editMode && "touch-none")}
+      {...(editMode ? { ...attributes, ...listeners } : tile.url ? longPress : {})}
     >
       {editMode ? (
         <button

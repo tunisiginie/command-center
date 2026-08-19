@@ -14,6 +14,7 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { SortableTile } from "@/components/sortable-tile";
 import { TileEditorSheet } from "@/components/tile-editor-sheet";
+import { TileActionsSheet } from "@/components/tile-actions-sheet";
 import { createClient } from "@/lib/supabase/client";
 import {
   createTile,
@@ -44,6 +45,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
   const [editMode, setEditMode] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTile, setEditingTile] = useState<Tile | null>(null);
+  const [actionsTile, setActionsTile] = useState<Tile | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -163,6 +165,7 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
                   editMode={editMode}
                   onEdit={openEdit}
                   onDelete={handleQuickDelete}
+                  onLongPress={setActionsTile}
                 />
               ))}
               <AddTileButton onClick={openCreate} />
@@ -177,6 +180,12 @@ export function TileBoard({ initialTiles, userId }: TileBoardProps) {
         onOpenChange={setEditorOpen}
         onSave={handleSave}
         onDelete={editingTile ? () => handleDelete(editingTile) : undefined}
+      />
+
+      <TileActionsSheet
+        tile={actionsTile}
+        open={actionsTile !== null}
+        onOpenChange={(o) => !o && setActionsTile(null)}
       />
     </>
   );
