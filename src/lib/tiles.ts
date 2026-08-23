@@ -150,14 +150,17 @@ export async function reorderTiles(
   if (failed?.error) throw failed.error;
 }
 
+
 /**
- * Bulk-inserts a first-run tile set in one round trip, positioned by array
- * order. Not a loop over `createTile` — that re-queries the max position on
- * every call, turning five tiles into ten round trips.
+ * Bulk-inserts tiles in one round trip, positioned starting at
+ * `startPosition`. Not a loop over `createTile` — that re-queries the max
+ * position on every call, turning a batch of N tiles into 2N round trips.
+ * Used by both the first-run starter seed and the multi-URL quick-add.
  */
-export async function seedStarterTiles(
+export async function insertTiles(
   supabase: SupabaseClient,
   inputs: TileInput[],
+  startPosition = 0,
 ): Promise<Tile[]> {
   const { data, error } = await supabase
     .from("tiles")
@@ -168,11 +171,27 @@ export async function seedStarterTiles(
         url: input.url ?? null,
         image_path: input.imagePath ?? null,
         accent: input.accent ?? "#2a41ba",
-        position: i,
+        position: startPosition + i,
       })),
     )
     .select("id, label, tagline, url, image_path, accent, position");
 
   if (error) throw error;
   return (data as TileRow[]).map((row) => toTile(row, supabase));
+}
+
+/** Highest `position` currently in use, or -1 if the board is empty. */
+export async function getMaxPosition(supabase: SupabaseClient): Promise<number> {
+  const { data, error } = await supabase
+    .from("tiles")
+    .select("position")
+    .order("position", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.length ? data[0].position : -1;
+}
+
+/** First-run starter set — thin wrapper so call sites read intent-first. */
+export function seedStarterTiles(supabase: SupabaseClient, inputs: TileInput[]): Promise<Tile[]> {
+  return insertTiles(supabase, inputs, 0);
 }

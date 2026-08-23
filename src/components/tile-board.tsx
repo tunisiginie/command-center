@@ -25,8 +25,12 @@ import {
   reorderTiles,
   uploadTileImage,
   seedStarterTiles,
+  insertTiles,
+  getMaxPosition,
   type TileInput,
 } from "@/lib/tiles";
+import { QuickAddSheet } from "@/components/quick-add-sheet";
+import { ACCENTS } from "@/lib/accents";
 import { STARTER_TILES } from "@/lib/starter-tiles";
 import { Button } from "@/components/ui/button";
 import { resizeImageToSquareWebp } from "@/lib/image";
@@ -63,6 +67,7 @@ export function TileBoard({ initialTiles }: TileBoardProps) {
   const [actionsTile, setActionsTile] = useState<Tile | null>(null);
   const [density, setDensity] = useTileDensity();
   const [seeding, setSeeding] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -162,6 +167,19 @@ export function TileBoard({ initialTiles }: TileBoardProps) {
     }
   }
 
+  async function handleQuickAdd(inputs: TileInput[]) {
+    const supabase = createClient();
+    try {
+      const startPosition = (await getMaxPosition(supabase)) + 1;
+      const created = await insertTiles(supabase, inputs, startPosition);
+      setTiles((prev) => [...prev, ...created]);
+      toast.success(`Added ${created.length} tile${created.length === 1 ? "" : "s"}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't add those tiles.");
+      throw err;
+    }
+  }
+
   /** The ✕ overlay skips the full sheet — same confirm, one less tap. */
   function handleQuickDelete(tile: Tile) {
     if (!window.confirm(`Remove "${tile.label}" from your Command Center?`)) return;
@@ -189,7 +207,12 @@ export function TileBoard({ initialTiles }: TileBoardProps) {
       </div>
 
       {tiles.length === 0 ? (
-        <EmptyState onAdd={openCreate} onSeed={handleSeed} seeding={seeding} />
+        <EmptyState
+          onAdd={openCreate}
+          onSeed={handleSeed}
+          seeding={seeding}
+          onQuickAdd={() => setQuickAddOpen(true)}
+        />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={tiles.map((t) => t.id)} strategy={rectSortingStrategy}>
@@ -206,6 +229,13 @@ export function TileBoard({ initialTiles }: TileBoardProps) {
               ))}
               <AddTileButton onClick={openCreate} />
             </div>
+            <button
+              type="button"
+              onClick={() => setQuickAddOpen(true)}
+              className="mt-3 text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Quick add multiple links
+            </button>
           </SortableContext>
         </DndContext>
       )}
@@ -222,6 +252,13 @@ export function TileBoard({ initialTiles }: TileBoardProps) {
         tile={actionsTile}
         open={actionsTile !== null}
         onOpenChange={(o) => !o && setActionsTile(null)}
+      />
+
+      <QuickAddSheet
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        accentOffset={tiles.length % ACCENTS.length}
+        onAdd={handleQuickAdd}
       />
     </>
   );
@@ -242,10 +279,12 @@ function EmptyState({
   onAdd,
   onSeed,
   seeding,
+  onQuickAdd,
 }: {
   onAdd: () => void;
   onSeed: () => void;
   seeding: boolean;
+  onQuickAdd: () => void;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 py-16 text-center">
@@ -263,6 +302,13 @@ function EmptyState({
         aria-label="Add a tile from scratch"
       >
         <PlusIcon className="size-6" />
+      </button>
+      <button
+        type="button"
+        onClick={onQuickAdd}
+        className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Or paste in several links at once
       </button>
     </div>
   );

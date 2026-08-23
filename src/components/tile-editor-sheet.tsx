@@ -16,18 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Tile } from "@/lib/types";
 import type { TileInput } from "@/lib/tiles";
-
-// House chart palette from globals.css, plus the brand primary and destructive —
-// a fixed swatch set is simpler and faster to pick from than a raw color input.
-const ACCENTS = [
-  "#2a41ba",
-  "#00c805",
-  "#1cc9b0",
-  "#5b7cfa",
-  "#f5a623",
-  "#8e96a3",
-  "#ff5000",
-];
+import { ACCENTS } from "@/lib/accents";
 
 interface TileEditorSheetProps {
   /** Tile being edited, or null when creating a new one. */
