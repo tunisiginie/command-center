@@ -29,6 +29,12 @@ export const STARTER_TILES: TileInput[] = [
     accent: "#f5a623",
   },
   {
+    label: "LinkedIn for Influencers",
+    tagline: null,
+    url: "https://linkedin-for-influencers.vercel.app",
+    accent: "#5b7cfa",
+  },
+  {
     label: "LinkedIn",
     tagline: null,
     url: null, // add your profile URL to light this up
