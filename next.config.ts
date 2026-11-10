@@ -1,11 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  images: {
-    // Tile images live in Supabase Storage — allow any project's public bucket
-    // without hardcoding a project ref here.
-    remotePatterns: [{ protocol: "https", hostname: "**.supabase.co" }],
-  },
-};
+// Tile images are static files in /public, so no remote image hosts are needed.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

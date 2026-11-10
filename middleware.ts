@@ -2,14 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { PIN_COOKIE } from "@/lib/pin";
 
 /**
- * PIN gate. Runs before any page render, so an unlocked visitor never
- * receives the app shell — which matters beyond the UI: the Supabase anon
- * key is inlined into the client bundle, and blocking the page keeps that
- * out of a stranger's hands too.
+ * PIN gate. Runs before any page render, so a visitor without the PIN never
+ * receives the app shell or the list of links in it.
  *
- * The gate disables itself when COMMAND_CENTER_PIN is unset, matching the
- * `isSupabaseConfigured()` pattern elsewhere — a fresh clone with no env
- * runs open rather than locking the owner out of their own dev server.
+ * The gate disables itself when COMMAND_CENTER_PIN is unset, so a fresh clone
+ * with no env runs open rather than locking the owner out of their own dev
+ * server.
  */
 export function middleware(request: NextRequest) {
   const pin = process.env.COMMAND_CENTER_PIN;

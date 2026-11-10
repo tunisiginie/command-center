@@ -1,4 +1,4 @@
-/** A single launcher tile. Mirrors the `public.tiles` Supabase table (see supabase/schema.sql). */
+/** A single launcher tile. The list lives in src/lib/tiles-data.ts. */
 export interface Tile {
   id: string;
   label: string;
@@ -6,7 +6,7 @@ export interface Tile {
   tagline: string | null;
   /** Destination URL. Null means "not built yet" — tile renders dimmed and doesn't navigate. */
   url: string | null;
-  /** Public URL of the uploaded tile image, or null to fall back to an initial + accent color. */
+  /** Image path or URL (e.g. "/tiles/foo.png" from /public), or null for an initial on the accent color. */
   imageUrl: string | null;
   /** Fallback background color (hex) used when there's no image. */
   accent: string;

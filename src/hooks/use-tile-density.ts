@@ -6,9 +6,8 @@ import { DENSITIES, type Density } from "@/lib/grid-density";
 const STORAGE_KEY = "command-center:tile-density";
 
 /**
- * Per-device tile size preference. Deliberately localStorage, not Supabase —
- * this is a "how it looks on this screen" setting, not board data that
- * needs to follow you across devices.
+ * Per-device tile size preference, kept in localStorage — it's a "how it
+ * looks on this screen" setting, so it shouldn't follow you across devices.
  */
 export function useTileDensity(): [Density, (d: Density) => void] {
   const [density, setDensityState] = useState<Density>("m");

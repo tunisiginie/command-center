@@ -11,10 +11,9 @@ interface UseLongPressOptions {
 }
 
 /**
- * Long-press detection for the tile actions sheet (copy link / QR), kept
- * separate from dnd-kit's drag gesture — this only runs outside edit mode,
- * dnd-kit's PointerSensor only runs inside it, so the two never compete for
- * the same touch.
+ * Long-press detection for the tile actions sheet (copy link / QR). A moved
+ * pointer cancels it (that's a scroll, not a hold), and the click that
+ * follows a fired long-press is swallowed so the tile doesn't also navigate.
  */
 export function useLongPress({ onLongPress, delay = 500, moveThreshold = 10 }: UseLongPressOptions) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

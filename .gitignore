@@ -42,7 +42,6 @@ next-env.d.ts
 
 .vercel
 .env*
-supabase/.temp/
 
 .vercel
 .env*
