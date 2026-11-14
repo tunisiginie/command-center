@@ -44,13 +44,22 @@ export const TILES: Tile[] = [
     position: 2,
   },
   {
+    id: "deal-board",
+    label: "Deal Board",
+    tagline: "Daily deal alerts",
+    url: "https://script.google.com/macros/s/AKfycbwEorO3FSQUE-Y_HwYmr3J5mpzy2muYnPEdGaPNcR-UBo45zUP2C7ALDUARUZxLzWAY/exec?view=board&k=910297e9a3b84866a59c750220b8bed6",
+    imageUrl: null,
+    accent: "#2c6a5d",
+    position: 3,
+  },
+  {
     id: "linkedin-for-influencers",
     label: "LinkedIn for Influencers",
     tagline: null,
     url: "https://linkedin-for-influencers.vercel.app",
     imageUrl: null,
     accent: "#5b7cfa",
-    position: 3,
+    position: 4,
   },
   {
     id: "ai-professor",
@@ -59,7 +68,7 @@ export const TILES: Tile[] = [
     url: "https://claude.ai/artifact/HojbwqomyVVxHNn6BwHQ3t",
     imageUrl: null,
     accent: "#1cc9b0",
-    position: 4,
+    position: 5,
   },
   {
     id: "linkedin",
@@ -68,6 +77,6 @@ export const TILES: Tile[] = [
     url: null, // add your profile URL to light this up
     imageUrl: null,
     accent: "#0a66c2",
-    position: 5,
+    position: 6,
   },
 ];
