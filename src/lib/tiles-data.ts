@@ -71,12 +71,21 @@ export const TILES: Tile[] = [
     position: 5,
   },
   {
+    id: "audiobooks",
+    label: "Audiobooks",
+    tagline: null,
+    url: "https://audiobooks-manet.inference-0909.chatgpt.site",
+    imageUrl: null,
+    accent: "#8e44ad",
+    position: 6,
+  },
+  {
     id: "linkedin",
     label: "LinkedIn",
     tagline: null,
     url: null, // add your profile URL to light this up
     imageUrl: null,
     accent: "#0a66c2",
-    position: 6,
+    position: 7,
   },
 ];
