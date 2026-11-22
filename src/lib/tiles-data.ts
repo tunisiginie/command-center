@@ -92,7 +92,7 @@ export const TILES: Tile[] = [
     id: "tap-to-book",
     label: "Tap to Book",
     tagline: "NFC card → my calendar",
-    url: null, // add your booking page URL to light this up
+    url: "https://claude.ai/artifact/RWFNKNhQxrMg2NLyxDTczi", // demo; swap for the live booking page
     imageUrl: null,
     accent: "#111111",
     position: 8,
