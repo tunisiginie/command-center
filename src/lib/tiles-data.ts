@@ -80,12 +80,30 @@ export const TILES: Tile[] = [
     position: 6,
   },
   {
+    id: "ai-price-check",
+    label: "AI Price Check",
+    tagline: "Our rate vs market",
+    url: "https://claude.ai/artifact/1EnoykumHmEmp4imUXUxzu",
+    imageUrl: null,
+    accent: "#00b84a",
+    position: 7,
+  },
+  {
+    id: "tap-to-book",
+    label: "Tap to Book",
+    tagline: "NFC card → my calendar",
+    url: null, // add your booking page URL to light this up
+    imageUrl: null,
+    accent: "#111111",
+    position: 8,
+  },
+  {
     id: "linkedin",
     label: "LinkedIn",
     tagline: null,
     url: null, // add your profile URL to light this up
     imageUrl: null,
     accent: "#0a66c2",
-    position: 7,
+    position: 9,
   },
 ];
